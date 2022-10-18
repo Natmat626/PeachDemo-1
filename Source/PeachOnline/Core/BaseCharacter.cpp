@@ -3,6 +3,8 @@
 
 #include "BaseCharacter.h"
 
+#include <iso646.h>
+
 #include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
@@ -71,6 +73,8 @@ void ABaseCharacter::StopJumpAction()
 void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	RunEnergy=MaxRunEnergy;
+	PlayerWalkState = WalkState::Walk;
 	
 }
 
@@ -78,6 +82,8 @@ void ABaseCharacter::BeginPlay()
 void ABaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	RefreshRunEnergy(DeltaTime);
 
 }
 
@@ -102,6 +108,26 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 }
 
+void ABaseCharacter::RefreshRunEnergy(float DeltaTime)
+{
+	if(PlayerWalkState == WalkState::Walk and RunEnergy<100)
+	{
+		RunEnergy = RunEnergy + DeltaTime*10;
+		return;
+	}
+	if(PlayerWalkState== WalkState::Run and RunEnergy>0)
+	{
+		RunEnergy = RunEnergy - DeltaTime*10;
+		return;
+	}
+	if(RunEnergy<=0)
+	{
+		PlayerWalkState=WalkState::Walk;
+		CharacterMovement->MaxWalkSpeed=300;
+		ServerNormalSpeedWalkAction();
+	}
+}
+
 void ABaseCharacter::ServerHighSpeedRunAction_Implementation()
 {
 	CharacterMovement->MaxWalkSpeed=600;
@@ -124,12 +150,22 @@ bool ABaseCharacter::ServerNormalSpeedWalkAction_Validate()
 
 void ABaseCharacter::HighSpeedRunAction()
 {
-	CharacterMovement->MaxWalkSpeed=600;
-	ServerHighSpeedRunAction();
+	if(RunEnergy>0)
+	{
+		PlayerWalkState = WalkState::Run;
+		CharacterMovement->MaxWalkSpeed=600;
+		ServerHighSpeedRunAction();
+	}
+	else
+	{
+		PlayerWalkState = WalkState::Walk;
+	}
+	
 }
 
 void ABaseCharacter::NormalSpeedWalkAction()
 {
+	PlayerWalkState = WalkState::Walk;
 	CharacterMovement->MaxWalkSpeed=300;
 	ServerNormalSpeedWalkAction();
 }
@@ -144,6 +180,6 @@ void ABaseCharacter::StopLookBack()
 {
 	PlayerCamera->SetActive(true,true);
 	PlayerCameraBack->SetActive(false,false);
-}
+} 
 
 

@@ -8,13 +8,19 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "BaseCharacter.generated.h"
-
+UENUM()
+enum class WalkState
+{
+	Walk =0,
+	Run = 1
+};
 UCLASS()
 class PEACHONLINE_API ABaseCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
+	
 	// Sets default values for this character's properties
 	ABaseCharacter();
 private:
@@ -60,11 +66,24 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+# define MaxRunEnergy 100;
+
+	
+	UPROPERTY(BlueprintReadOnly)
+	int RunEnergy;
+	
+	UPROPERTY(BlueprintReadOnly)
+	WalkState PlayerWalkState;
 	// Called every frame
+	
+	
 	virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	void RefreshRunEnergy(float DeltaTime);
+
 #pragma region Networking
 	
 	UFUNCTION(Server,Reliable,WithValidation)
