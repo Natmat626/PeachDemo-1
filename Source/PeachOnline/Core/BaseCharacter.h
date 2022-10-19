@@ -70,7 +70,7 @@ public:
 
 	
 	UPROPERTY(BlueprintReadOnly)
-	int RunEnergy;
+	float RunEnergy;
 	
 	UPROPERTY(BlueprintReadOnly)
 	WalkState PlayerWalkState;

@@ -110,14 +110,14 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 void ABaseCharacter::RefreshRunEnergy(float DeltaTime)
 {
-	if(PlayerWalkState == WalkState::Walk and RunEnergy<100)
+	if(PlayerWalkState == WalkState::Walk and RunEnergy<100.f)
 	{
-		RunEnergy = RunEnergy + DeltaTime*10;
+		RunEnergy = RunEnergy + 0.1;
 		return;
 	}
-	if(PlayerWalkState== WalkState::Run and RunEnergy>0)
+	if(PlayerWalkState== WalkState::Run and RunEnergy>0.f)
 	{
-		RunEnergy = RunEnergy - DeltaTime*10;
+		RunEnergy = RunEnergy - 0.1;
 		return;
 	}
 	if(RunEnergy<=0)
