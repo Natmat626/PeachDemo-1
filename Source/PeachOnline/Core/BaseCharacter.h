@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "PeachPlayerController.h"
+#include "PeachPortal.h"
+#include "ProjectilePeach.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -42,7 +44,9 @@ private:
 	
 	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess = "true"))
 	APeachPlayerController* FPSPlayerController;
-	
+
+	UFUNCTION()
+	void DelayBeginPlayCallBack();
 #pragma endregion
 
 #pragma region Input
@@ -54,9 +58,11 @@ private:
 	void StopJumpAction();
 	void HighSpeedRunAction();
 	void NormalSpeedWalkAction();
-
+	void FireFart();
 	void LookBack();
 	void StopLookBack();
+	void ResetProtal();
+	void CallBackPortal();
 
 
 
@@ -69,21 +75,46 @@ public:
 # define MaxRunEnergy 100;
 
 	
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly,Replicated)
 	float RunEnergy;
 	
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly,Replicated)
 	WalkState PlayerWalkState;
-	// Called every frame
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	bool IsSetPortal;
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	bool IsAiming;
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	bool HavePlacedProtal;
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	APeachPortal* PtrPortal;
 	
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	bool CanFire;
+	// Called every frame
+
+	FTimerHandle TimerHandle;
 	
 	virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void FellOutOfWorld(const class UDamageType& dmgType) override;
+
 	void RefreshRunEnergy(float DeltaTime);
 
+	void ResetFireState();
+
+	void PortalFunction();
+
+	
+   
+	void PutPortalLineTeace(FVector CameraLocation, FRotator CameraRotation);
 #pragma region Networking
 	
 	UFUNCTION(Server,Reliable,WithValidation)
@@ -96,7 +127,38 @@ public:
 	void ServerNormalSpeedWalkAction_Implementation();
 	bool ServerNormalSpeedWalkAction_Validate();
 	
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerFireFart();
+	void ServerFireFart_Implementation();
+	bool ServerFireFart_Validate();
 
-	
-#pragma  endregion 
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerSetProtal();
+	void ServerSetProtal_Implementation();
+	bool ServerSetProtal_Validate();
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerSetIsAiming(bool Newstate);
+	void ServerSetIsAiming_Implementation(bool Newstate);
+	bool ServerSetIsAiming_Validate(bool Newstate);
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerCallBackPortal();
+	void ServerCallBackPortal_Implementation();
+	bool ServerCallBackPortal_Validate();
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerResetState();
+	void ServerResetState_Implementation();
+	bool ServerResetState_Validate();
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerPortalFunction();
+	void ServerPortalFunction_Implementation();
+	bool ServerPortalFunction_Validate();
+
+#pragma  endregion
+protected:
+	TSubclassOf<AProjectilePeach> ProjectileClass;
+	TSubclassOf<APeachPortal>  PortalClass;
 };

@@ -14,4 +14,8 @@ class PEACHONLINE_API APeachPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	
+public:
+	UFUNCTION(BlueprintImplementableEvent,Category="Health")
+	void DeathMatchDeth(AActor* DamgeActor);
+	
 };
