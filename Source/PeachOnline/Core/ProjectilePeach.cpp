@@ -44,6 +44,7 @@ void AProjectilePeach::BeginPlay()
 void AProjectilePeach::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
 
 }
 
@@ -84,14 +85,11 @@ void AProjectilePeach::ServerOnFartHit_Implementation(UPrimitiveComponent* HitCo
 			return;
 		}
 		this->Destroy();
-		
-		
 		//UKismetSystemLibrary::PrintString(GetWorld(),FString::Printf(TEXT("Name :%s "),*OtherActor->GetName()));
 		//UKismetSystemLibrary::PrintString(GetWorld(),FString::Printf(TEXT("Name :%s "),*Hit.Normal.ToString()));
 	}
 	else
 	{
-		return;
 	}
 	
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/Actor.h"
 #include "PeachPortal.generated.h"
 
@@ -15,16 +16,22 @@ class PEACHONLINE_API APeachPortal : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APeachPortal();
-
+	
 #pragma region Component
 
 	UPROPERTY(Category=Character,VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess = "true"));
+	USphereComponent* SphereCollisionComp ;
+	UPROPERTY(Category=Character,VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess = "true"));
 	UBoxComponent* DetectBox;
+	UPROPERTY(Category=Character,VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess = "true"));
+	UStaticMeshComponent* StaticMesh;
 
-
+	bool CanOtherNotSee = 0;
+	bool CanTransmit =0 ;
 #pragma  endregion
 
-
+	void InitCanOtherSee(bool CanSee);
+	
 	UFUNCTION()
 	void OnDetectBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
 

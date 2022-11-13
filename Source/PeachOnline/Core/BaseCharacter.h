@@ -95,9 +95,26 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly,Replicated)
 	bool CanFire;
+	
+	UPROPERTY(BlueprintReadOnly,Replicated)
+    int BananaCount;
+    
+    UPROPERTY(BlueprintReadOnly,Replicated)
+    int AppleCount;
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	int WatermelonCount;
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	int OrangeCount;
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	int DurianCount;
+	
 	// Called every frame
 
 	FTimerHandle TimerHandle;
+	FTimerHandle TimerHandle2;
 	
 	virtual void Tick(float DeltaTime) override;
 
@@ -112,7 +129,7 @@ public:
 
 	void PortalFunction();
 
-	
+	void SetPortalVisableState();
    
 	void PutPortalLineTeace(FVector CameraLocation, FRotator CameraRotation);
 #pragma region Networking
@@ -157,6 +174,15 @@ public:
 	void ServerPortalFunction_Implementation();
 	bool ServerPortalFunction_Validate();
 
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerSetMoveState(int State);
+	void ServerSetMoveState_Implementation(int State);
+	bool ServerSetMoveState_Validate(int State);
+
+	UFUNCTION(NetMulticast,Reliable,WithValidation)
+	void ServerSetPortalVisable(APeachPortal* Portal);
+	void ServerSetPortalVisable_Implementation(APeachPortal* Portal);
+	bool ServerSetPortalVisable_Validate(APeachPortal* Portal);
 #pragma  endregion
 protected:
 	TSubclassOf<AProjectilePeach> ProjectileClass;

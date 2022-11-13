@@ -3,16 +3,28 @@
 
 #include "PeachPortal.h"
 
+#include "BaseCharacter.h"
+#include "Kismet/KismetSystemLibrary.h"
+
 // Sets default values
 APeachPortal::APeachPortal()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	SphereCollisionComp  = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComp"));
+	RootComponent = SphereCollisionComp;
 	DetectBox = CreateDefaultSubobject<UBoxComponent>(TEXT("DetectBox"));
-	DetectBox->SetupAttachment(RootComponent);
+	//DetectBox->SetupAttachment(RootComponent);
 	DetectBox->OnComponentBeginOverlap.AddDynamic(this,&APeachPortal::OnDetectBoxOverlapBegin);
 	DetectBox->OnComponentEndOverlap.AddDynamic(this,&APeachPortal::OnDetectBoxOverlapeEnd);
-	
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
+	StaticMesh->SetupAttachment(RootComponent);
+	StaticMesh->SetOnlyOwnerSee(true);
+}
+
+void APeachPortal::InitCanOtherSee(bool CanSee)
+{
+	StaticMesh->SetOnlyOwnerSee(CanSee);
 }
 
 void APeachPortal::OnDetectBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
@@ -36,6 +48,6 @@ void APeachPortal::BeginPlay()
 void APeachPortal::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 }
 
