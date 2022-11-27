@@ -7,7 +7,7 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 
-
+PRAGMA_DISABLE_OPTIMIZATION
 // Sets default values
 AProjectilePeach::AProjectilePeach()
 {
@@ -15,17 +15,17 @@ AProjectilePeach::AProjectilePeach()
 	PrimaryActorTick.bCanEverTick = true;
 
 	ProjectileFart = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileFart"));
+	ProjectileFart->SetIsReplicated(true);
 	SphereCollisionComp  = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComp"));
 	RootComponent = SphereCollisionComp;
 
-	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
-	StaticMesh->SetupAttachment(RootComponent);
-	SphereCollisionComp->OnComponentHit.AddDynamic(this,&AProjectilePeach::ServerOnFartHit);
+	/*StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
+	StaticMesh->SetupAttachment(RootComponent);*/
+	//SphereCollisionComp->OnComponentHit.AddDynamic(this,&AProjectilePeach::ServerOnFartHit);
 	SphereCollisionComp->IgnoreActorWhenMoving(GetOwner(),true);
-
-	InitFartSpeed();
-
-	
+	SphereCollisionComp->OnComponentBeginOverlap.AddDynamic(this,&AProjectilePeach::ServerOnPropOverlap);
+	ProjectileFart->InitialSpeed = 0;
+	ProjectileFart->MaxSpeed = 8000;
 	//ProjectileFart->SetUpdatedComponent(RootComponent);
 }
 
@@ -34,8 +34,14 @@ void AProjectilePeach::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AProjectilePeach::DestroyFartOnTime, 0.5f, false);
-	InitFartSpeed();
+	
+	if(UKismetSystemLibrary::IsServer(this))
+	{
+		auto Ownerptr = Cast<ABaseCharacter>(GetOwner());
+		InitFartSpeed(Ownerptr->BananaCount);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AProjectilePeach::DestroyFartOnTime, 3.0f+0.1f*Ownerptr->WatermelonCount, false);
+	}
+	
 	
 	
 }
@@ -53,11 +59,13 @@ void AProjectilePeach::DestroyFartOnTime()
 	ServerDestroyFartOnTime();
 }
 
-void AProjectilePeach::InitFartSpeed()
+void AProjectilePeach::InitFartSpeed(int Number)
 {
-	ProjectileFart->InitialSpeed = 1000;
-	ProjectileFart->MaxSpeed =1000;
-	ServerInitFartSpeed();
+	ProjectileFart->SetVelocityInLocalSpace(FVector(1,0,0)*(300+100*Number));
+	//ProjectileFart->InitialSpeed = 1000*Number;
+	//ProjectileFart->MaxSpeed = 1000*Number;
+	//ProjectileFart->SetAutoActivate(1);
+	//ServerInitFartSpeed();
 }
 
 void AProjectilePeach::ServerInitFartSpeed_Implementation()
@@ -80,7 +88,22 @@ void AProjectilePeach::ServerOnFartHit_Implementation(UPrimitiveComponent* HitCo
 		
 		if(Cast<ABaseCharacter>(Hit.Actor)!=nullptr)
 		{
-			Cast<ABaseCharacter>(Hit.Actor)->LaunchCharacter(Hit.Normal*-1*3000,false,false);//移动 不能模拟物理
+			auto itsss = Cast<ABaseCharacter>(Hit.Actor);
+			auto itssss = Cast<ABaseCharacter>(GetOwner());
+			if(itsss == itssss)
+			{
+				return;
+			}
+			auto AppleNumber = Cast<ABaseCharacter>(GetOwner())->AppleCount;
+			FHitResult OutSweepHitResult;
+			//Cast<ABaseCharacter>(Hit.Actor)->AddActorWorldOffset(Hit.Normal*-1*3000,true,&OutSweepHitResult,ETeleportType::None);
+			
+			//Cast<ABaseCharacter>(Hit.Actor)->LaunchCharacter(Hit.Normal*-1*(3000+AppleNumber*300),false,false);//移动 不能模拟物理
+			auto it =this->GetActorForwardVector();
+			it.Normalize();
+			FVector its = FVector(it.X,it.Y,it.Z);
+			Cast<ABaseCharacter>(Hit.Actor)->LaunchCharacter(its*(3000+AppleNumber*300),false,false);//移动 不能模拟物理
+		
 			this->Destroy();
 			return;
 		}
@@ -96,6 +119,60 @@ void AProjectilePeach::ServerOnFartHit_Implementation(UPrimitiveComponent* HitCo
 
 bool AProjectilePeach::ServerOnFartHit_Validate(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	return true;
+}
+
+void AProjectilePeach::ServerOnPropOverlap_Implementation(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if(UKismetSystemLibrary::IsServer(this))
+	{
+		if(Cast<AProjectilePeach>(SweepResult.Actor) == this)
+		{
+			return;
+		}
+		
+		if((Cast<ABaseCharacter>(GetOwner())->PtrPortal)!=nullptr)
+		{
+			if(Cast<APeachPortal>(SweepResult.Actor) == (Cast<ABaseCharacter>(GetOwner())->PtrPortal))
+			{
+				return;
+			}
+		}
+		
+		if(Cast<ABaseCharacter>(SweepResult.Actor)!=nullptr)
+		{
+			
+			if(Cast<ABaseCharacter>(SweepResult.Actor) == Cast<ABaseCharacter>(GetOwner()))
+			{
+				return;
+			}
+			auto AppleNumber = Cast<ABaseCharacter>(GetOwner())->AppleCount;
+			FHitResult OutSweepHitResult;
+			//Cast<ABaseCharacter>(Hit.Actor)->AddActorWorldOffset(Hit.Normal*-1*3000,true,&OutSweepHitResult,ETeleportType::None);
+			
+			//Cast<ABaseCharacter>(Hit.Actor)->LaunchCharacter(Hit.Normal*-1*(3000+AppleNumber*300),false,false);//移动 不能模拟物理
+			auto it =this->GetActorForwardVector();
+			it.Normalize();
+			FVector its = FVector(it.X,it.Y,it.Z);
+			Cast<ABaseCharacter>(SweepResult.Actor)->LaunchCharacter(its*(3000+AppleNumber*300),false,false);//移动 不能模拟物理
+			auto ItsOwner = Cast<ABaseCharacter>(this->GetOwner());
+			Cast<ABaseCharacter>(SweepResult.Actor)->Killerptr = Cast<APeachPlayerController>(ItsOwner->GetController());
+			this->Destroy();
+			return;
+		}
+		this->Destroy();
+		//UKismetSystemLibrary::PrintString(GetWorld(),FString::Printf(TEXT("Name :%s "),*OtherActor->GetName()));
+		//UKismetSystemLibrary::PrintString(GetWorld(),FString::Printf(TEXT("Name :%s "),*Hit.Normal.ToString()));
+	}
+	else
+	{
+	}
+}
+
+bool AProjectilePeach::ServerOnPropOverlap_Validate(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	return true;
 }

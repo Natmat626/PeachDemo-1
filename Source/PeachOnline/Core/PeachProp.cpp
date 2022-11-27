@@ -3,6 +3,8 @@
 
 #include "PeachProp.h"
 
+#include <iso646.h>
+
 #include "BaseCharacter.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
@@ -121,7 +123,11 @@ void APeachProp::ServerOnPropOverlap_Implementation(UPrimitiveComponent* Overlap
 				}
 			case (PropClass::Orange):
 				{
-					if(it->OrangeCount>=1)
+					if(it->OrangeCount>=1 )
+					{
+						return;
+					}
+					if(it->PtrPortal!=nullptr and it->PtrPortal->CanOtherNotSee==true)
 					{
 						return;
 					}
@@ -133,6 +139,10 @@ void APeachProp::ServerOnPropOverlap_Implementation(UPrimitiveComponent* Overlap
 			case (PropClass::Durian):
 				{
 					if(it->DurianCount>=1)
+					{
+						return;
+					}
+					if(it->PtrPortal!=nullptr and it->PtrPortal->CanTransmit==true)
 					{
 						return;
 					}

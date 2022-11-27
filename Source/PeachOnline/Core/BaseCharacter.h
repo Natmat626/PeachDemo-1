@@ -3,12 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "KillerNotice.h"
 #include "PeachPlayerController.h"
 #include "PeachPortal.h"
+#include "PortalPutUIActor.h"
 #include "ProjectilePeach.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "BaseCharacter.generated.h"
 UENUM()
 enum class WalkState
@@ -110,7 +113,10 @@ public:
 
 	UPROPERTY(BlueprintReadOnly,Replicated)
 	int DurianCount;
-	
+
+
+	UPROPERTY(BlueprintReadOnly,Replicated)
+	APeachPlayerController* Killerptr;
 	// Called every frame
 
 	FTimerHandle TimerHandle;
@@ -118,6 +124,7 @@ public:
 	
 	virtual void Tick(float DeltaTime) override;
 
+	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -183,8 +190,23 @@ public:
 	void ServerSetPortalVisable(APeachPortal* Portal);
 	void ServerSetPortalVisable_Implementation(APeachPortal* Portal);
 	bool ServerSetPortalVisable_Validate(APeachPortal* Portal);
+
+	UFUNCTION(NetMulticast,Reliable,WithValidation)
+	void ServerShowKillerNotice(const FString&  Killer, const FString&  Bekillered);
+	void ServerShowKillerNotice_Implementation( const FString&   Killer, const FString&   Bekillered);
+	bool ServerShowKillerNotice_Validate(const FString&    Killer, const FString&    Bekillered);
 #pragma  endregion
 protected:
 	TSubclassOf<AProjectilePeach> ProjectileClass;
 	TSubclassOf<APeachPortal>  PortalClass;
+	TSubclassOf<APortalPutUIActor>  PortalUICLass;
+	TSubclassOf<UKillerNotice> KillerNoticeClassUnit;
+	APortalPutUIActor* PortalPutUIActorPtr;
+	TWeakPtr<APortalPutUIActor> test;
+
+	FVector PortalUIEndLocation;
+	FHitResult PortalUIHitResult;
+	FVector PortalUICameraForwardVector ;
+	TArray<AActor*> PortalUIIgnoreArray;
+
 };

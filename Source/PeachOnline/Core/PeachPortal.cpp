@@ -5,6 +5,7 @@
 
 #include "BaseCharacter.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 APeachPortal::APeachPortal()
@@ -13,13 +14,24 @@ APeachPortal::APeachPortal()
 	PrimaryActorTick.bCanEverTick = true;
 	SphereCollisionComp  = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComp"));
 	RootComponent = SphereCollisionComp;
-	DetectBox = CreateDefaultSubobject<UBoxComponent>(TEXT("DetectBox"));
-	//DetectBox->SetupAttachment(RootComponent);
-	DetectBox->OnComponentBeginOverlap.AddDynamic(this,&APeachPortal::OnDetectBoxOverlapBegin);
-	DetectBox->OnComponentEndOverlap.AddDynamic(this,&APeachPortal::OnDetectBoxOverlapeEnd);
+	DetectEnermy = CreateDefaultSubobject<USphereComponent>(TEXT("DetectEnermy"));
+	DetectEnermy->SetupAttachment(RootComponent);
+
+	DetectEnermy->OnComponentBeginOverlap.AddDynamic(this,&APeachPortal::OnDetectEnermyOverlapBegin);
+	DetectEnermy->OnComponentEndOverlap.AddDynamic(this,&APeachPortal::OnDetectEnermyOverlapeEnd);
+
+	DetectCallBack = CreateDefaultSubobject<USphereComponent>(TEXT("DetectCallBack"));
+	DetectCallBack->SetupAttachment(RootComponent);
+
+	DetectCallBack->OnComponentBeginOverlap.AddDynamic(this,&APeachPortal::OnDetectCallBackOverlapBegin);
+	DetectCallBack->OnComponentEndOverlap.AddDynamic(this,&APeachPortal::OnDetectCallBackOverlapeEnd);
+	
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	StaticMesh->SetupAttachment(RootComponent);
 	StaticMesh->SetOnlyOwnerSee(true);
+
+	DetectEnermy->SetSphereRadius(100);
+	DetectCallBack->SetSphereRadius(100);
 }
 
 void APeachPortal::InitCanOtherSee(bool CanSee)
@@ -27,20 +39,82 @@ void APeachPortal::InitCanOtherSee(bool CanSee)
 	StaticMesh->SetOnlyOwnerSee(CanSee);
 }
 
-void APeachPortal::OnDetectBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+void APeachPortal::OnDetectEnermyOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
+	if(Cast<ABaseCharacter>(OtherActor)==nullptr)
+	{
+		return;
+	}
 	
+	if(Cast<APeachPortal>(OtherActor)!=nullptr)
+	{
+		if(Cast<ABaseCharacter>(OtherActor) != Cast<ABaseCharacter>( GetOwner()))
+		{
+			EmermyInzone++;
+			return;
+		}
+	}
+	if(Cast<ABaseCharacter>(OtherActor) != Cast<ABaseCharacter>( GetOwner()))
+	{
+		EmermyInzone++;
+	}
 }
 
-void APeachPortal::OnDetectBoxOverlapeEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void APeachPortal::OnDetectEnermyOverlapeEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	if(Cast<ABaseCharacter>(OtherActor)==nullptr)
+	{
+		return;
+	}
+	if(Cast<ABaseCharacter>(OtherActor) != Cast<ABaseCharacter>( GetOwner()))
+	{
+		EmermyInzone--;
+	}
+}
+
+void APeachPortal::OnDetectCallBackOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+
+	if(Cast<ABaseCharacter>(OtherActor)==nullptr)
+	{
+		return;
+	}
 	
+	if(Cast<APeachPortal>(OtherActor)!=nullptr)
+	{
+		if(Cast<ABaseCharacter>(OtherActor) == Cast<ABaseCharacter>( GetOwner()))
+		{
+			IsCanCallBack = true;
+			return;
+		}
+	}
+	if(Cast<ABaseCharacter>(OtherActor) == Cast<ABaseCharacter>( GetOwner()))
+	{
+		IsCanCallBack = true;
+	}
+}
+
+void APeachPortal::OnDetectCallBackOverlapeEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+
+	if(Cast<ABaseCharacter>(OtherActor)==nullptr)
+	{
+		return;
+	}
+	
+	if(Cast<ABaseCharacter>(OtherActor) == Cast<ABaseCharacter>( GetOwner()))
+	{
+		IsCanCallBack = false;
+	}
 }
 
 // Called when the game starts or when spawned
 void APeachPortal::BeginPlay()
 {
 	Super::BeginPlay();
+	
 	
 }
 
@@ -51,3 +125,9 @@ void APeachPortal::Tick(float DeltaTime)
 	
 }
 
+void APeachPortal::GetLifetimeReplicatedProps( TArray< FLifetimeProperty > & OutLifetimeProps ) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION(APeachPortal,CanTransmit,COND_None);
+	DOREPLIFETIME_CONDITION(APeachPortal,CanOtherNotSee,COND_None);
+}

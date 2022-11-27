@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/PeachLoginUI.h"
 #include "Core/PeachProp.h"
 #include "GameFramework/GameModeBase.h"
 #include "PeachOnlineGameModeBase.generated.h"
@@ -31,9 +32,14 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TMap<UObject*,APeachProp*> PonitToPropMap;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPeachLoginUI* PlayerLoginUI=nullptr;
+
 	
 	UFUNCTION(BlueprintCallable)
 	void BeginTimerToSpawnProp();
+
+	
 	
 	UFUNCTION()
 	void SpawnProp();
@@ -44,6 +50,7 @@ public:
 	FTimerHandle TimerHandle;
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 
+	virtual APlayerController* Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal, const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	TSubclassOf<APeachProp> BananaClass;
 	TSubclassOf<APeachProp> AppleClass;
 	TSubclassOf<APeachProp> WatermelonClass;

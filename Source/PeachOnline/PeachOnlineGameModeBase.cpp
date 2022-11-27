@@ -3,6 +3,7 @@
 
 #include "PeachOnlineGameModeBase.h"
 
+#include "Core/BaseCharacter.h"
 #include "Kismet/BlueprintMapLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 PRAGMA_DISABLE_OPTIMIZATION
@@ -14,13 +15,26 @@ void APeachOnlineGameModeBase::InitGame(const FString& MapName, const FString& O
 	AppleClass = LoadClass<APeachProp>(nullptr,TEXT("Blueprint'/Game/Prop/BP_Apple.BP_Apple_C'"));
 	WatermelonClass = LoadClass<APeachProp>(nullptr,TEXT("Blueprint'/Game/Prop/BP_Watermelon.BP_Watermelon_C'"));
 	OrangeClass = LoadClass<APeachProp>(nullptr,TEXT("Blueprint'/Game/Prop/BP_Orange.BP_Orange_C'"));
-	DurianClass = LoadClass<APeachProp>(nullptr,TEXT("Blueprint'/Game/Prop/BP_Orange.BP_Orange_C'"));
+	DurianClass = LoadClass<APeachProp>(nullptr,TEXT("Blueprint'/Game/Prop/BP_Durian.BP_Durian_C'"));
+}
+
+APlayerController* APeachOnlineGameModeBase::Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal,
+	const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+	auto it = Super::Login(NewPlayer, InRemoteRole, Portal, Options, UniqueId, ErrorMessage);
+	auto its = Cast<APeachPlayerController>(it);
+	if(PlayerLoginUI!=nullptr)
+	{
+		its->PlayerName = PlayerLoginUI->PlayerName->GetText().ToString();
+	}
+	
+	return its;
 }
 
 
 void APeachOnlineGameModeBase::BeginTimerToSpawnProp()
 {
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &APeachOnlineGameModeBase::SpawnProp, 1.0f,true);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &APeachOnlineGameModeBase::SpawnProp, 0.2f,true);
 }
 
 void APeachOnlineGameModeBase::SpawnProp()
@@ -93,6 +107,7 @@ void APeachOnlineGameModeBase::ResetPiontMap(APeachProp* PeachProp)
 			return;
 		} 
 	}
+	
 	//auto it = PonitToPropMap.GetKeys()
 }
 

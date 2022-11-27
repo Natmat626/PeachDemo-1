@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/Actor.h"
@@ -27,9 +28,10 @@ public:
 	UPROPERTY(Category=Character,VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess = "true"));
 	USphereComponent* SphereCollisionComp ;
 	
-	UPROPERTY(Category=Character,VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess = "true"));
-	UStaticMeshComponent* StaticMesh;
+	/*UPROPERTY(Category=Character,VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess = "true"));
+	UStaticMeshComponent* StaticMesh;*/
 
+	
 	FTimerHandle TimerHandle;
 #pragma  endregion 
 
@@ -45,7 +47,7 @@ public:
 
 	void  DestroyFartOnTime();
 #pragma region Networking
-	void InitFartSpeed();
+	void InitFartSpeed(int Number);
 	UFUNCTION(Server,Reliable,WithValidation)
 	void ServerInitFartSpeed();
 	void ServerInitFartSpeed_Implementation();
@@ -55,6 +57,12 @@ public:
 	void ServerOnFartHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	void ServerOnFartHit_Implementation(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	bool ServerOnFartHit_Validate(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerOnPropOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+	void ServerOnPropOverlap_Implementation(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	bool ServerOnPropOverlap_Validate(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION(Server,Reliable,WithValidation)
 	void ServerDestroyFartOnTime();

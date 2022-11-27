@@ -5,20 +5,23 @@
 
 #include <iso646.h>
 
+#include "Components/SlateWrapperTypes.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "PeachOnline/PeachOnlineGameModeBase.h"
-
+PRAGMA_DISABLE_OPTIMIZATION
 // Sets default values
 ABaseCharacter::ABaseCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	PortalUICLass = LoadClass<APortalPutUIActor>(nullptr,TEXT("Blueprint'/Game/Portal/BP_PortalUI.BP_PortalUI_C'"));
 	ProjectileClass = LoadClass<AProjectilePeach>(nullptr,TEXT("Blueprint'/Game/Fart/BP_Fart.BP_Fart_C'"));
 	PortalClass = LoadClass<APeachPortal>(nullptr,TEXT("Blueprint'/Game/Portal/BP_Portal.BP_Portal_C'"));
+	KillerNoticeClassUnit = LoadClass<UKillerNotice>(nullptr,TEXT("WidgetBlueprint'/Game/UI/KillerNotice.KillerNotice_C'"));
 #pragma region Component
 	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	if(CameraSpringArm)
@@ -61,7 +64,7 @@ void ABaseCharacter::DelayBeginPlayCallBack()
 	FPSPlayerController = Cast<APeachPlayerController>( GetController());
 	if(FPSPlayerController)
 	{
-		
+		FPSPlayerController->SetPawn(this);
 	}
 	else
 	{
@@ -77,8 +80,15 @@ void ABaseCharacter::DelayBeginPlayCallBack()
 
 void ABaseCharacter::MoveRight(float AxisValue)
 {
-	
+	if(IsAiming)
+	{
+		AxisValue = -AxisValue;
+	}
 	// find out which way is right
+	if(FPSPlayerController==nullptr)
+	{
+		return;
+	}
 	const FRotator Rotation = FPSPlayerController->GetControlRotation();
 	const FRotator YawRotation(0, Rotation.Yaw, 0);
 	// get right vector 
@@ -90,12 +100,21 @@ void ABaseCharacter::MoveRight(float AxisValue)
 
 void ABaseCharacter::MoveForward(float AxisValue)
 {
+	if(IsAiming)
+	{
+		AxisValue = -AxisValue;
+	}
+	if(FPSPlayerController==nullptr)
+	{
+		return;
+	}
 	const FRotator Rotation = Controller->GetControlRotation();
 	const FRotator YawRotation(0, Rotation.Yaw, 0);
 	// get forward vector
 	const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	AddMovementInput(Direction, AxisValue);
 }
+
 
 void ABaseCharacter::JumpAction()
 {
@@ -119,17 +138,23 @@ void ABaseCharacter::BeginPlay()
 	IsAiming = false;
 	CanFire = true;
 	PtrPortal = nullptr;
+	Killerptr = nullptr;
 	RunEnergy=MaxRunEnergy;
 	PlayerWalkState = WalkState::Walk;
 	
+	PortalPutUIActorPtr =nullptr;
 	BananaCount = 0;
 	AppleCount = 0;
 	WatermelonCount = 0;
 	OrangeCount = 0;
 	DurianCount = 0;
 	FPSPlayerController = Cast<APeachPlayerController>( GetController());
+	PortalUIIgnoreArray.Add(this);
+
+	Killerptr=nullptr;
 	if(FPSPlayerController)
 	{
+		FPSPlayerController->SetPawn(this);
 		
 	}
 	else
@@ -151,6 +176,55 @@ void ABaseCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	
 	RefreshRunEnergy(DeltaTime);
+
+	if(FPSPlayerController!=nullptr)
+	{
+		FPSPlayerController->Ptrportal = PtrPortal;
+		FPSPlayerController->PropSum = BananaCount+AppleCount+WatermelonCount+OrangeCount+DurianCount;
+	}
+	if(IsSetPortal==true)
+	{
+		PortalUICameraForwardVector = UKismetMathLibrary::GetForwardVector(PlayerCamera->GetComponentRotation());
+		
+		PortalUIEndLocation = PlayerCamera->GetComponentLocation() + PortalUICameraForwardVector * 1000;//可放置的长度
+		bool LineHitSuccess = UKismetSystemLibrary::LineTraceSingle(GetWorld(), PlayerCamera->GetComponentLocation(),PortalUIEndLocation,ETraceTypeQuery::TraceTypeQuery1,false,
+			PortalUIIgnoreArray,EDrawDebugTrace::None,PortalUIHitResult,true,FLinearColor::Red
+			,FLinearColor::Green,30.f);
+		if(LineHitSuccess)
+		{
+			if(PortalPutUIActorPtr==nullptr)
+			{
+				FRotator XRotator = UKismetMathLibrary::MakeRotFromX(PortalUIHitResult.Normal);
+				PortalPutUIActorPtr = GetWorld()->SpawnActor<APortalPutUIActor>(PortalUICLass,PortalUIHitResult.Location+PortalUIHitResult.Normal*1,XRotator);
+				PortalUIIgnoreArray.Add(PortalPutUIActorPtr);
+			}
+			else
+			{
+				FRotator XRotator = UKismetMathLibrary::MakeRotFromX(PortalUIHitResult.Normal);
+				PortalPutUIActorPtr->GetRootComponent()->SetVisibility(true);
+				PortalPutUIActorPtr->SetActorLocation(PortalUIHitResult.Location+PortalUIHitResult.Normal*1);
+				PortalPutUIActorPtr->SetActorRotation(XRotator);
+			}
+		}
+		else
+		{
+			if(PortalPutUIActorPtr!=nullptr)
+			{
+				PortalPutUIActorPtr->GetRootComponent()->SetVisibility(false);
+				PortalPutUIActorPtr->WidgetComponent->SetVisibility(false);
+			}
+			
+		}
+		
+	}
+	else
+	{
+		if(PortalPutUIActorPtr!=nullptr)
+		{
+			PortalPutUIActorPtr->WidgetComponent->SetVisibility(false);
+		}
+		
+	}
 
 }
 
@@ -188,6 +262,11 @@ void ABaseCharacter::FellOutOfWorld(const UDamageType& dmgType)
 	APeachPlayerController*  OnlinePeachPlayerController = Cast<APeachPlayerController>(FPSPlayerController);
 	if(OnlinePeachPlayerController)
 	{
+		if(PortalPutUIActorPtr!=nullptr)
+		{
+			PortalPutUIActorPtr->Destroy();
+		}
+		ServerShowKillerNotice(Killerptr->PlayerName,FPSPlayerController->PlayerName);
 		ServerResetState();
 		OnlinePeachPlayerController->DeathMatchDeth(this);
 		
@@ -208,6 +287,8 @@ void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME_CONDITION(ABaseCharacter,WatermelonCount,COND_None);
 	DOREPLIFETIME_CONDITION(ABaseCharacter,OrangeCount,COND_None);
 	DOREPLIFETIME_CONDITION(ABaseCharacter,DurianCount,COND_None);
+	DOREPLIFETIME_CONDITION(ABaseCharacter,Killerptr,COND_None);
+	
 }
 
 void ABaseCharacter::RefreshRunEnergy(float DeltaTime)
@@ -278,11 +359,15 @@ void ABaseCharacter::ServerSetMoveState_Implementation(int State)
 	{
 		GetCharacterMovement()->bOrientRotationToMovement = 0;
 		GetCharacterMovement()->bUseControllerDesiredRotation = 1;
+		PlayerCamera->SetActive(false,false);
+		PlayerCameraBack->SetActive(true,false);
 	}
 	else
 	{
-		GetCharacterMovement()->bOrientRotationToMovement = 0;
+		GetCharacterMovement()->bOrientRotationToMovement = 1;
 		GetCharacterMovement()->bUseControllerDesiredRotation = 0;
+		PlayerCamera->SetActive(true,false);
+		PlayerCameraBack->SetActive(false,false);
 	}
 	
 }
@@ -297,11 +382,31 @@ void ABaseCharacter::ServerSetPortalVisable_Implementation(APeachPortal* Portal)
 	if(Portal!=nullptr)
 	{
 		Portal->StaticMesh->SetOnlyOwnerSee(false);
+		Portal->CanOtherNotSee = false;
 	}
 	
 }
 
 bool ABaseCharacter::ServerSetPortalVisable_Validate(APeachPortal* Portal)
+{
+	return true;
+}
+
+void ABaseCharacter::ServerShowKillerNotice_Implementation( const FString&  Killer, const FString& Bekillered)
+{
+	if(UKismetSystemLibrary::IsServer(this)==false)
+	{
+
+		auto NewUnit =(CreateWidget<UKillerNotice>(FPSPlayerController->PtrPlayerUI,KillerNoticeClassUnit));
+		NewUnit->TexKiller->SetText(FText::FromString(*Killer));
+		NewUnit->TexBekilled->SetText(FText::FromString(*Bekillered));
+		FPSPlayerController->PtrPlayerUI->KillerNoticeList->AddChild(NewUnit);
+		
+	}
+	
+}
+
+bool ABaseCharacter::ServerShowKillerNotice_Validate( const FString&  Killer,  const FString&  Bekillered)
 {
 	return true;
 }
@@ -326,7 +431,9 @@ void ABaseCharacter::PutPortalLineTeace(FVector CameraLocation, FRotator CameraR
 		{
 			//UKismetSystemLibrary::PrintString(GetWorld(),FString::Printf(TEXT("Name :%s "),*HitResult.Normal.ToString()));
 			FRotator XRotator = UKismetMathLibrary::MakeRotFromX(HitResult.Normal);
-			FVector LocationNew = FVector(HitResult.Location.X +HitResult.Normal.X,HitResult.Location.Y +HitResult.Normal.Y,HitResult.Location.Z +HitResult.Normal.Z);
+			FVector NormalizeNormalFector = HitResult.Normal;
+			NormalizeNormalFector.Normalize();
+			FVector LocationNew = FVector(HitResult.Location.X +NormalizeNormalFector.X,HitResult.Location.Y +NormalizeNormalFector.Y,HitResult.Location.Z +NormalizeNormalFector.Z);
 
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = this;
@@ -336,16 +443,16 @@ void ABaseCharacter::PutPortalLineTeace(FVector CameraLocation, FRotator CameraR
 			PtrPortal = GetWorld()->SpawnActor<APeachPortal>(PortalClass,LocationNew,XRotator,SpawnParams);
 			if(OrangeCount>=1)//有橘子，传送门隐身10s
 			{
-				PtrPortal->CanTransmit=DurianCount;
-				PtrPortal->CanOtherNotSee=OrangeCount;
+				PtrPortal->CanTransmit=DurianCount>0?true:false;
+				PtrPortal->CanOtherNotSee=OrangeCount>0?true:false;
 				DurianCount=0;
 				OrangeCount=0;
 				GetWorld()->GetTimerManager().SetTimer(TimerHandle2, this, &ABaseCharacter::SetPortalVisableState, 10.0f, false);
 			}
 			else if(OrangeCount==0)//没有橘子，传送门不隐身
 			{
-				PtrPortal->CanTransmit=DurianCount;
-				PtrPortal->CanOtherNotSee=OrangeCount;
+				PtrPortal->CanTransmit=DurianCount>0?true:false;
+				PtrPortal->CanOtherNotSee=OrangeCount>0?true:false;
 				DurianCount=0;
 				OrangeCount=0;
 				//PtrPortal = Cast<APeachPortal>(UGameplayStatics::BeginSpawningActorFromClass(this,PortalClass,FTransform(XRotator,LocationNew,FVector(1,1,1)),ESpawnActorCollisionHandlingMethod::Undefined,this));
@@ -387,20 +494,28 @@ bool ABaseCharacter::ServerNormalSpeedWalkAction_Validate()
 void ABaseCharacter::ServerFireFart_Implementation()
 {
 	
-	if(IsAiming == true)
+	if(IsSetPortal == false)
 	{
 		if(CanFire)
 		{
+			if(CharacterMovement->Velocity.Z!=0)
+			{
+				return;
+			}
 			//不是放置传送门状态下放屁
 			//FActorSpawnParameters SpawnParameters;
 			//SpawnParameters.Owner = this;
 			if(RunEnergy>=20)
 			{
-				FVector NewLocation  = PlayerCameraBack->GetComponentLocation() + PlayerCameraBack->GetForwardVector()*40;
+				FVector NewLocation  = PlayerCameraBack->GetComponentLocation() + PlayerCameraBack->GetForwardVector()*20;
+				//auto Trans = PlayerCameraBack->GetComponentRotation();
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.Owner = this;
 				SpawnParams.Instigator = this;
 				RunEnergy=RunEnergy-20;
+				/*auto it = Cast<AProjectilePeach>(UGameplayStatics::BeginSpawningActorFromClass(this,ProjectileClass,FTransform(Trans,NewLocation,FVector(1,1,1)),false,this));
+				it->InitFartSpeed(1);
+				UGameplayStatics::FinishSpawningActor(PtrPortal, FTransform(Trans,NewLocation,FVector(1,1,1)));*/
 				GetWorld()->SpawnActor<AProjectilePeach>(ProjectileClass,NewLocation,PlayerCameraBack->GetComponentRotation(),SpawnParams);
 				CanFire = false;
 				GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ABaseCharacter::ResetFireState, 0.2f, false);
@@ -433,18 +548,19 @@ void ABaseCharacter::ServerSetProtal_Implementation()
 {
 	if(PtrPortal!=nullptr)
 	{
-		if(PtrPortal->CanTransmit==1)//只有这种情况下才能传送
+		if(PtrPortal->CanTransmit==true)//只有这种情况下才能传送
 		{
 			FVector NewLocation = FVector(PtrPortal->GetActorLocation().X+PtrPortal->GetActorForwardVector().X*10,
 			PtrPortal->GetActorLocation().Y+PtrPortal->GetActorForwardVector().Y*10,
 			PtrPortal->GetActorLocation().Z+PtrPortal->GetActorForwardVector().Z*10+50);
 			this->SetActorLocation(NewLocation);
-			PtrPortal->CanTransmit=0;
+			PtrPortal->CanTransmit= false;
 			return;
 		}
 		else
 		{
 			IsSetPortal = false;
+			return;
 		}
 		//传送
 	}
@@ -494,9 +610,20 @@ void ABaseCharacter::ServerResetState_Implementation()
 	{
 		PtrPortal->Destroy();
 	}
+	if(PortalPutUIActorPtr!=nullptr)
+	{
+		PortalPutUIActorPtr->Destroy();
+	}
 	PtrPortal = nullptr;
-	Cast<APeachOnlineGameModeBase>(GetWorld()->GetAuthGameMode())->RemainPropNumber=Cast<APeachOnlineGameModeBase>(GetWorld()->GetAuthGameMode())->RemainPropNumber
-	+BananaCount+AppleCount+WatermelonCount+OrangeCount+DurianCount;
+	auto oldnumber = Cast<APeachOnlineGameModeBase>(GetWorld()->GetAuthGameMode())->RemainPropNumber;
+	
+	Cast<APeachOnlineGameModeBase>(GetWorld()->GetAuthGameMode())->RemainPropNumber= oldnumber+BananaCount+AppleCount+WatermelonCount+OrangeCount+DurianCount;
+	BananaCount=0;
+	AppleCount=0;
+	WatermelonCount=0;
+	OrangeCount=0;
+	DurianCount=0;
+	auto newnumber = Cast<APeachOnlineGameModeBase>(GetWorld()->GetAuthGameMode())->RemainPropNumber;
 }
 
 bool ABaseCharacter::ServerResetState_Validate()
@@ -546,9 +673,10 @@ void ABaseCharacter::LookBack()
 	{
 		return;
 	}
+	FPSPlayerController->PtrPlayerUI->Aiming_ToShow();
 	ServerSetIsAiming(true);
 	PlayerCamera->SetActive(false,false);
-	PlayerCameraBack->SetActive(true,true);
+	PlayerCameraBack->SetActive(true,false);
 
 
 	GetCharacterMovement()->bOrientRotationToMovement = 0;
@@ -558,10 +686,12 @@ void ABaseCharacter::LookBack()
 
 void ABaseCharacter::StopLookBack()
 {
+
+	FPSPlayerController->PtrPlayerUI->Aiming_ToHide();
 	ServerSetIsAiming(false);
-	PlayerCamera->SetActive(true,true);
+	PlayerCamera->SetActive(true,false);
 	PlayerCameraBack->SetActive(false,false);
-	GetCharacterMovement()->bOrientRotationToMovement = 0;
+	GetCharacterMovement()->bOrientRotationToMovement = 1;
 	GetCharacterMovement()->bUseControllerDesiredRotation = 0;
 	ServerSetMoveState(0);
 }
@@ -573,7 +703,15 @@ void ABaseCharacter::ResetProtal()
 
 void ABaseCharacter::CallBackPortal()
 {
-	ServerCallBackPortal();
+	if(PtrPortal==nullptr)
+	{
+		return;
+	}
+	if(PtrPortal->IsCanCallBack)
+	{
+		ServerCallBackPortal();
+	}
+	
 } 
 
 
