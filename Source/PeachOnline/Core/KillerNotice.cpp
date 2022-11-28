@@ -3,16 +3,18 @@
 
 #include "KillerNotice.h"
 
+#include "PeachPlayerController.h"
+
 void UKillerNotice::NativeConstruct()
 {
 	Super::NativeConstruct();
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UKillerNotice::Destoryself, 5.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UKillerNotice::Destorythiswidget, 5.0f, false);
 }
 
-void UKillerNotice::Destoryself()
+void UKillerNotice::Destorythiswidget()
 {
 	if(this!=nullptr)
 	{
-		Destoryself();
+		Cast<APeachPlayerController>(GetWorld()->GetFirstPlayerController())->PtrPlayerUI->KillerNoticeList->ClearChildren();
 	}
 }

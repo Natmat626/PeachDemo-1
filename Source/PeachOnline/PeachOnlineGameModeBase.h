@@ -51,6 +51,8 @@ public:
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 
 	virtual APlayerController* Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal, const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
+	virtual void PostLogin(APlayerController* NewPlayer)override;
+
 	TSubclassOf<APeachProp> BananaClass;
 	TSubclassOf<APeachProp> AppleClass;
 	TSubclassOf<APeachProp> WatermelonClass;

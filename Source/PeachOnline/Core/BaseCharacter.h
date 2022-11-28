@@ -9,6 +9,7 @@
 #include "PortalPutUIActor.h"
 #include "ProjectilePeach.h"
 #include "Camera/CameraComponent.h"
+#include "Engine/DataTable.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -19,6 +20,24 @@ enum class WalkState
 	Walk =0,
 	Run = 1
 };
+
+USTRUCT(BlueprintType)
+struct FDatas:public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+	FDatas() 
+	:PropertyName(TEXT(""))
+	,Value(){}
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category="FDatas")
+	FString PropertyName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FDatas")
+	float Value;
+};
+
 UCLASS()
 class PEACHONLINE_API ABaseCharacter : public ACharacter
 {
@@ -186,6 +205,11 @@ public:
 	void ServerSetMoveState_Implementation(int State);
 	bool ServerSetMoveState_Validate(int State);
 
+	UFUNCTION(Server,Reliable,WithValidation)
+	void ServerAskForKillNotice();
+	void ServerAskForKillNotice_Implementation();
+	bool ServerAskForKillNotice_Validate();
+
 	UFUNCTION(NetMulticast,Reliable,WithValidation)
 	void ServerSetPortalVisable(APeachPortal* Portal);
 	void ServerSetPortalVisable_Implementation(APeachPortal* Portal);
@@ -208,5 +232,6 @@ protected:
 	FHitResult PortalUIHitResult;
 	FVector PortalUICameraForwardVector ;
 	TArray<AActor*> PortalUIIgnoreArray;
-
+	float TableRunspeed;
+	UDataTable* Table;
 };

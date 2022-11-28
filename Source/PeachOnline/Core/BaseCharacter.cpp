@@ -22,6 +22,8 @@ ABaseCharacter::ABaseCharacter()
 	ProjectileClass = LoadClass<AProjectilePeach>(nullptr,TEXT("Blueprint'/Game/Fart/BP_Fart.BP_Fart_C'"));
 	PortalClass = LoadClass<APeachPortal>(nullptr,TEXT("Blueprint'/Game/Portal/BP_Portal.BP_Portal_C'"));
 	KillerNoticeClassUnit = LoadClass<UKillerNotice>(nullptr,TEXT("WidgetBlueprint'/Game/UI/KillerNotice.KillerNotice_C'"));
+
+	Table = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/DesignerTable/DesignerTable.DesignerTable'"));
 #pragma region Component
 	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	if(CameraSpringArm)
@@ -141,6 +143,7 @@ void ABaseCharacter::BeginPlay()
 	Killerptr = nullptr;
 	RunEnergy=MaxRunEnergy;
 	PlayerWalkState = WalkState::Walk;
+
 	
 	PortalPutUIActorPtr =nullptr;
 	BananaCount = 0;
@@ -152,9 +155,27 @@ void ABaseCharacter::BeginPlay()
 	PortalUIIgnoreArray.Add(this);
 
 	Killerptr=nullptr;
+
+	if (Table != nullptr)
+	{
+		for (auto it : Table->GetRowMap())
+		{
+			FString rowName = (it.Key).ToString();
+			//FProduct为你的FStruct
+			FDatas* pRow = (FDatas*)it.Value;
+			//输出需根据你的FStruct进行调整
+			if(pRow->PropertyName==TEXT("RunSpeed"))
+			{
+				TableRunspeed=pRow->Value;
+				break;
+			}
+		}
+	}
+	
 	if(FPSPlayerController)
 	{
 		FPSPlayerController->SetPawn(this);
+		
 		
 	}
 	else
@@ -266,7 +287,8 @@ void ABaseCharacter::FellOutOfWorld(const UDamageType& dmgType)
 		{
 			PortalPutUIActorPtr->Destroy();
 		}
-		ServerShowKillerNotice(Killerptr->PlayerName,FPSPlayerController->PlayerName);
+		ServerAskForKillNotice();
+		
 		ServerResetState();
 		OnlinePeachPlayerController->DeathMatchDeth(this);
 		
@@ -377,6 +399,29 @@ bool ABaseCharacter::ServerSetMoveState_Validate(int State)
 	return true;
 }
 
+void ABaseCharacter::ServerAskForKillNotice_Implementation()
+{
+	
+	
+		if(Killerptr==nullptr)
+		{
+			ServerShowKillerNotice(*FPSPlayerController->PlayerName,*FPSPlayerController->PlayerName);
+			Killerptr=nullptr;
+		}
+		else if(Killerptr!=nullptr)
+		{
+			ServerShowKillerNotice(*Killerptr->PlayerName,*FPSPlayerController->PlayerName);
+			Killerptr=nullptr;
+		}
+	
+}
+
+bool ABaseCharacter::ServerAskForKillNotice_Validate()
+{
+	return true;
+}
+
+
 void ABaseCharacter::ServerSetPortalVisable_Implementation(APeachPortal* Portal)
 {
 	if(Portal!=nullptr)
@@ -394,15 +439,23 @@ bool ABaseCharacter::ServerSetPortalVisable_Validate(APeachPortal* Portal)
 
 void ABaseCharacter::ServerShowKillerNotice_Implementation( const FString&  Killer, const FString& Bekillered)
 {
-	if(UKismetSystemLibrary::IsServer(this)==false)
-	{
+	
+	
 
+		/*if(FPSPlayerController==nullptr)
+		{
+			return;
+		}
+		if(FPSPlayerController->PtrPlayerUI==nullptr)
+		{
+			return;
+		}
 		auto NewUnit =(CreateWidget<UKillerNotice>(FPSPlayerController->PtrPlayerUI,KillerNoticeClassUnit));
 		NewUnit->TexKiller->SetText(FText::FromString(*Killer));
 		NewUnit->TexBekilled->SetText(FText::FromString(*Bekillered));
-		FPSPlayerController->PtrPlayerUI->KillerNoticeList->AddChild(NewUnit);
+		FPSPlayerController->PtrPlayerUI->KillerNoticeList->AddChild(NewUnit);*/
 		
-	}
+	
 	
 }
 
@@ -470,7 +523,7 @@ void ABaseCharacter::PutPortalLineTeace(FVector CameraLocation, FRotator CameraR
 
 void ABaseCharacter::ServerHighSpeedRunAction_Implementation()
 {
-	CharacterMovement->MaxWalkSpeed=600;
+	CharacterMovement->MaxWalkSpeed=TableRunspeed;
 	PlayerWalkState = WalkState::Run;
 	
 }
@@ -643,7 +696,7 @@ void ABaseCharacter::HighSpeedRunAction()
 	if(RunEnergy>0)
 	{
 		PlayerWalkState = WalkState::Run;
-		CharacterMovement->MaxWalkSpeed=600;
+		CharacterMovement->MaxWalkSpeed=TableRunspeed;
 		ServerHighSpeedRunAction();
 	}
 	else

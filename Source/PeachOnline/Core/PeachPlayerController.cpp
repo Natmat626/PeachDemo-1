@@ -4,6 +4,8 @@
 #include "PeachPlayerController.h"
 
 #include "BaseCharacter.h"
+#include "PeachGameInstance.h"
+#include "SaveName.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "PeachOnline/PeachOnlineGameModeBase.h"
@@ -22,8 +24,18 @@ void APeachPlayerController::OnNetCleanup(UNetConnection* Connection)
 		it->RemainPropNumber = it->RemainPropNumber+PropSum;
 		Super::OnNetCleanup(Connection);
 	}
-	
-	
 }
+
+void APeachPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+	PlayerName = Cast<UPeachGameInstance>(GetWorld()->GetGameInstance())->PlayerName;
+	PlayerName = TEXT("1111");
+}
+
+
+
+
+
 
 

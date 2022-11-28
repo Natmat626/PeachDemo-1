@@ -24,5 +24,5 @@ public:
 	FTimerHandle TimerHandle;
 	
 	virtual void NativeConstruct()override;
-	void Destoryself();
+	void Destorythiswidget();
 };

@@ -33,6 +33,5 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	FString PlayerName = TEXT("");
-
-	
+	virtual void BeginPlay() override;
 };

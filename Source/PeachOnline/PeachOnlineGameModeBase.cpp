@@ -26,9 +26,16 @@ APlayerController* APeachOnlineGameModeBase::Login(UPlayer* NewPlayer, ENetRole 
 	if(PlayerLoginUI!=nullptr)
 	{
 		its->PlayerName = PlayerLoginUI->PlayerName->GetText().ToString();
+		return its;
 	}
+	return it;
 	
-	return its;
+}
+
+void APeachOnlineGameModeBase::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+	
 }
 
 
