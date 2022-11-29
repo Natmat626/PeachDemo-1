@@ -64,7 +64,7 @@ private:
 	UPROPERTY(Category=Character,VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess = "true"));
 	USpringArmComponent* CameraSpringArm;
 	
-	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess = "true"),Replicated)
 	APeachPlayerController* FPSPlayerController;
 
 	UFUNCTION()

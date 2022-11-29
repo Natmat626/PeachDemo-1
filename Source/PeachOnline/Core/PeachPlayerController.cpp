@@ -8,6 +8,7 @@
 #include "SaveName.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Net/UnrealNetwork.h"
 #include "PeachOnline/PeachOnlineGameModeBase.h"
 PRAGMA_DISABLE_OPTIMIZATION
 
@@ -29,8 +30,14 @@ void APeachPlayerController::OnNetCleanup(UNetConnection* Connection)
 void APeachPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	PlayerName = Cast<UPeachGameInstance>(GetWorld()->GetGameInstance())->PlayerName;
+	//PlayerName = Cast<UPeachGameInstance>(GetWorld()->GetGameInstance())->PlayerName;
 	PlayerName = TEXT("1111");
+}
+
+void APeachPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION(APeachPlayerController,PtrPlayerUI,COND_None);
 }
 
 

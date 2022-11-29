@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PeachPlayerUI.h"
 #include "Engine/GameInstance.h"
 #include "PeachGameInstance.generated.h"
 
@@ -16,4 +17,7 @@ class PEACHONLINE_API UPeachGameInstance : public UGameInstance
 public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString PlayerName=TEXT("");
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPeachPlayerUI* PtrPlayerUI;
 };

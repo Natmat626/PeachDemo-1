@@ -25,7 +25,7 @@ public:
 	int PropSum=0;
 
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite,Replicated)
 	UPeachPlayerUI* PtrPlayerUI;
 	
 	UPROPERTY(BlueprintReadWrite)
@@ -34,4 +34,6 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	FString PlayerName = TEXT("");
 	virtual void BeginPlay() override;
+
+	virtual void GetLifetimeReplicatedProps( TArray< FLifetimeProperty > & OutLifetimeProps ) const override;
 };

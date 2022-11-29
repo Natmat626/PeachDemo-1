@@ -287,10 +287,16 @@ void ABaseCharacter::FellOutOfWorld(const UDamageType& dmgType)
 		{
 			PortalPutUIActorPtr->Destroy();
 		}
-		ServerAskForKillNotice();
-		
 		ServerResetState();
+		if(UKismetSystemLibrary::IsServer(this))
+		{
+			UE_LOG(LogTemp,Warning,TEXT("ceshi"));
+			ServerAskForKillNotice();
+		}
 		OnlinePeachPlayerController->DeathMatchDeth(this);
+	
+		
+		
 		
 	}
 }
@@ -310,6 +316,7 @@ void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME_CONDITION(ABaseCharacter,OrangeCount,COND_None);
 	DOREPLIFETIME_CONDITION(ABaseCharacter,DurianCount,COND_None);
 	DOREPLIFETIME_CONDITION(ABaseCharacter,Killerptr,COND_None);
+	DOREPLIFETIME_CONDITION(ABaseCharacter,FPSPlayerController,COND_None);
 	
 }
 
@@ -440,9 +447,9 @@ bool ABaseCharacter::ServerSetPortalVisable_Validate(APeachPortal* Portal)
 void ABaseCharacter::ServerShowKillerNotice_Implementation( const FString&  Killer, const FString& Bekillered)
 {
 	
-	
-
-		/*if(FPSPlayerController==nullptr)
+		UE_LOG(LogTemp,Warning,TEXT("Fuc"));
+		
+		if(FPSPlayerController==nullptr)
 		{
 			return;
 		}
@@ -453,7 +460,7 @@ void ABaseCharacter::ServerShowKillerNotice_Implementation( const FString&  Kill
 		auto NewUnit =(CreateWidget<UKillerNotice>(FPSPlayerController->PtrPlayerUI,KillerNoticeClassUnit));
 		NewUnit->TexKiller->SetText(FText::FromString(*Killer));
 		NewUnit->TexBekilled->SetText(FText::FromString(*Bekillered));
-		FPSPlayerController->PtrPlayerUI->KillerNoticeList->AddChild(NewUnit);*/
+		FPSPlayerController->PtrPlayerUI->KillerNoticeList->AddChild(NewUnit);
 		
 	
 	
@@ -461,6 +468,7 @@ void ABaseCharacter::ServerShowKillerNotice_Implementation( const FString&  Kill
 
 bool ABaseCharacter::ServerShowKillerNotice_Validate( const FString&  Killer,  const FString&  Bekillered)
 {
+	UE_LOG(LogTemp,Warning,TEXT("Validate"));
 	return true;
 }
 
