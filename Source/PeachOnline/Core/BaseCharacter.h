@@ -64,7 +64,7 @@ private:
 	UPROPERTY(Category=Character,VisibleAnywhere,BlueprintReadWrite,meta=(AllowPrivateAccess = "true"));
 	USpringArmComponent* CameraSpringArm;
 	
-	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess = "true"),Replicated)
+	UPROPERTY(BlueprintReadOnly,meta=(AllowPrivateAccess = "true"))
 	APeachPlayerController* FPSPlayerController;
 
 	UFUNCTION()
@@ -215,10 +215,7 @@ public:
 	void ServerSetPortalVisable_Implementation(APeachPortal* Portal);
 	bool ServerSetPortalVisable_Validate(APeachPortal* Portal);
 
-	UFUNCTION(NetMulticast,Reliable,WithValidation)
-	void ServerShowKillerNotice(const FString&  Killer, const FString&  Bekillered);
-	void ServerShowKillerNotice_Implementation( const FString&   Killer, const FString&   Bekillered);
-	bool ServerShowKillerNotice_Validate(const FString&    Killer, const FString&    Bekillered);
+	
 #pragma  endregion
 protected:
 	TSubclassOf<AProjectilePeach> ProjectileClass;
@@ -233,5 +230,11 @@ protected:
 	FVector PortalUICameraForwardVector ;
 	TArray<AActor*> PortalUIIgnoreArray;
 	float TableRunspeed;
+	float TableWalkspeed;
+	float TableRunEnergyCost;
+	float TableRunEnergyRecover;
+	float TablePortalInvisibleTime;
+	float TablePeachCostEnergy;
+	float TablePutPortalLength;
 	UDataTable* Table;
 };

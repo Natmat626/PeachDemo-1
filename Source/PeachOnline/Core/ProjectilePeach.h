@@ -6,6 +6,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
+#include "Engine/DataTable.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "ProjectilePeach.generated.h"
@@ -69,6 +70,14 @@ public:
 	void ServerDestroyFartOnTime_Implementation();
 	bool ServerDestroyFartOnTime_Validate();
 
+	float TablePeachExistTime;
+	float TablePeachSpeed;
+	float TablePeachHitPlayerSpeed;
+
+	float TablePeachExistTimeAdd;
+	float TablePeachSpeedAdd;
+	float TablePeachHitPlayerSpeedAdd;
+	UDataTable* Table;
 #pragma endregion 
 	
 };

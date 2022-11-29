@@ -16,6 +16,8 @@ void APeachOnlineGameModeBase::InitGame(const FString& MapName, const FString& O
 	WatermelonClass = LoadClass<APeachProp>(nullptr,TEXT("Blueprint'/Game/Prop/BP_Watermelon.BP_Watermelon_C'"));
 	OrangeClass = LoadClass<APeachProp>(nullptr,TEXT("Blueprint'/Game/Prop/BP_Orange.BP_Orange_C'"));
 	DurianClass = LoadClass<APeachProp>(nullptr,TEXT("Blueprint'/Game/Prop/BP_Durian.BP_Durian_C'"));
+
+	Table = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/DesignerTable/DesignerTable.DesignerTable'"));
 }
 
 APlayerController* APeachOnlineGameModeBase::Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal,
@@ -38,10 +40,30 @@ void APeachOnlineGameModeBase::PostLogin(APlayerController* NewPlayer)
 	
 }
 
+void APeachOnlineGameModeBase::StartPlay()
+{
+	Super::StartPlay();
+	if (Table != nullptr)
+	{
+		for (auto it : Table->GetRowMap())
+		{
+			FString rowName = (it.Key).ToString();
+			//FProduct为你的FStruct
+			FDatas* pRow = (FDatas*)it.Value;
+			//输出需根据你的FStruct进行调整
+			if(pRow->PropertyName==TEXT("TableSpawnFruitInterval"))
+			{
+				TableSpawnFruitInterval=pRow->Value;
+				break;
+			}
+		}
+	}
+}
+
 
 void APeachOnlineGameModeBase::BeginTimerToSpawnProp()
 {
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &APeachOnlineGameModeBase::SpawnProp, 0.2f,true);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &APeachOnlineGameModeBase::SpawnProp, TableSpawnFruitInterval,true);
 }
 
 void APeachOnlineGameModeBase::SpawnProp()

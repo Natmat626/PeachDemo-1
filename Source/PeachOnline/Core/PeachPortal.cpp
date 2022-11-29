@@ -30,8 +30,9 @@ APeachPortal::APeachPortal()
 	StaticMesh->SetupAttachment(RootComponent);
 	StaticMesh->SetOnlyOwnerSee(true);
 
-	DetectEnermy->SetSphereRadius(100);
-	DetectCallBack->SetSphereRadius(100);
+	/*DetectEnermy->SetSphereRadius(100);
+	DetectCallBack->SetSphereRadius(100);*/
+	Table = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/DesignerTable/DesignerTable.DesignerTable'"));
 }
 
 void APeachPortal::InitCanOtherSee(bool CanSee)
@@ -114,7 +115,28 @@ void APeachPortal::OnDetectCallBackOverlapeEnd(UPrimitiveComponent* OverlappedCo
 void APeachPortal::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	if (Table != nullptr)
+	{
+		for (auto it : Table->GetRowMap())
+		{
+			FString rowName = (it.Key).ToString();
+			//FProduct为你的FStruct
+			FDatas* pRow = (FDatas*)it.Value;
+			//输出需根据你的FStruct进行调整
+			if(pRow->PropertyName==TEXT("TableDetectEnermyRadius"))
+			{
+				TableDetectEnermyRadius=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TableDetectCallBackRadius"))
+			{
+				TableDetectCallBackRadius=pRow->Value;
+				continue;
+			}
+		}
+	}
+	DetectEnermy->SetSphereRadius(TableDetectEnermyRadius);
+	DetectCallBack->SetSphereRadius(TableDetectCallBackRadius);
 	
 }
 

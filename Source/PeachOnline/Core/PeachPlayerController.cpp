@@ -12,6 +12,11 @@
 #include "PeachOnline/PeachOnlineGameModeBase.h"
 PRAGMA_DISABLE_OPTIMIZATION
 
+APeachPlayerController::APeachPlayerController()
+{
+	KillerNoticeClassUnit = LoadClass<UKillerNotice>(nullptr,TEXT("WidgetBlueprint'/Game/UI/KillerNotice.KillerNotice_C'"));
+}
+
 void APeachPlayerController::OnNetCleanup(UNetConnection* Connection)
 {
 	if(UKismetSystemLibrary::IsServer(this))
@@ -32,6 +37,23 @@ void APeachPlayerController::BeginPlay()
 	Super::BeginPlay();
 	//PlayerName = Cast<UPeachGameInstance>(GetWorld()->GetGameInstance())->PlayerName;
 	PlayerName = TEXT("1111");
+}
+
+void APeachPlayerController::ServerShowKillerNotice_Implementation(const FString& Killer, const FString& Bekillered)
+{
+	if(this->PtrPlayerUI==nullptr)
+	{
+		return;
+	}
+	auto NewUnit =(CreateWidget<UKillerNotice>(this->PtrPlayerUI,KillerNoticeClassUnit));
+	NewUnit->TexKiller->SetText(FText::FromString(*Killer));
+	NewUnit->TexBekilled->SetText(FText::FromString(*Bekillered));
+	this->PtrPlayerUI->KillerNoticeList->AddChild(NewUnit);
+}
+
+bool APeachPlayerController::ServerShowKillerNotice_Validate(const FString& Killer, const FString& Bekillered)
+{
+	return true;
 }
 
 void APeachPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

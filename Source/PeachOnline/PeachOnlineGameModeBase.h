@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Core/PeachLoginUI.h"
 #include "Core/PeachProp.h"
+#include "Engine/DataTable.h"
 #include "GameFramework/GameModeBase.h"
 #include "PeachOnlineGameModeBase.generated.h"
 
@@ -57,6 +58,10 @@ public:
 	TSubclassOf<APeachProp> AppleClass;
 	TSubclassOf<APeachProp> WatermelonClass;
 	TSubclassOf<APeachProp> OrangeClass;
-	TSubclassOf<APeachProp> DurianClass; 
+	TSubclassOf<APeachProp> DurianClass;
+	virtual void StartPlay()override;
+
+	float TableSpawnFruitInterval;
+	UDataTable* Table;
 ;
 };

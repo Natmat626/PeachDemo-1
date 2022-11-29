@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/TextBlock.h"
+#include "Engine/DataTable.h"
 #include "KillerNotice.generated.h"
 
 /**
@@ -23,6 +24,11 @@ public:
 	
 	FTimerHandle TimerHandle;
 	
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct()override;
 	void Destorythiswidget();
+
+
+	float TableKillNoticeTime;
+	UDataTable* Table;
 };

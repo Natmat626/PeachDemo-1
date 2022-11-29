@@ -27,6 +27,7 @@ AProjectilePeach::AProjectilePeach()
 	ProjectileFart->InitialSpeed = 0;
 	ProjectileFart->MaxSpeed = 8000;
 	//ProjectileFart->SetUpdatedComponent(RootComponent);
+	Table = LoadObject<UDataTable>(nullptr, TEXT("DataTable'/Game/DesignerTable/DesignerTable.DesignerTable'"));
 }
 
 // Called when the game starts or when spawned
@@ -34,12 +35,52 @@ void AProjectilePeach::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (Table != nullptr)
+	{
+		for (auto it : Table->GetRowMap())
+		{
+			FString rowName = (it.Key).ToString();
+			//FProduct为你的FStruct
+			FDatas* pRow = (FDatas*)it.Value;
+			//输出需根据你的FStruct进行调整
+			if(pRow->PropertyName==TEXT("TablePeachExistTime"))
+			{
+				TablePeachExistTime=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TablePeachSpeed"))
+			{
+				TablePeachSpeed=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TablePeachHitPlayerSpeed"))
+			{
+				TablePeachHitPlayerSpeed=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TablePeachExistTimeAdd"))
+			{
+				TablePeachExistTimeAdd=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TablePeachSpeedAdd"))
+			{
+				TablePeachSpeedAdd=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TablePeachHitPlayerSpeedAdd"))
+			{
+				TablePeachHitPlayerSpeedAdd=pRow->Value;
+				continue;
+			}
+		}
+	}
 	
 	if(UKismetSystemLibrary::IsServer(this))
 	{
 		auto Ownerptr = Cast<ABaseCharacter>(GetOwner());
 		InitFartSpeed(Ownerptr->BananaCount);
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AProjectilePeach::DestroyFartOnTime, 3.0f+0.1f*Ownerptr->WatermelonCount, false);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AProjectilePeach::DestroyFartOnTime, TablePeachExistTime+TablePeachExistTimeAdd*Ownerptr->WatermelonCount, false);
 	}
 	
 	
@@ -61,7 +102,7 @@ void AProjectilePeach::DestroyFartOnTime()
 
 void AProjectilePeach::InitFartSpeed(int Number)
 {
-	ProjectileFart->SetVelocityInLocalSpace(FVector(1,0,0)*(300+100*Number));
+	ProjectileFart->SetVelocityInLocalSpace(FVector(1,0,0)*(TablePeachSpeed+TablePeachSpeedAdd*Number));
 	//ProjectileFart->InitialSpeed = 1000*Number;
 	//ProjectileFart->MaxSpeed = 1000*Number;
 	//ProjectileFart->SetAutoActivate(1);
@@ -102,7 +143,7 @@ void AProjectilePeach::ServerOnFartHit_Implementation(UPrimitiveComponent* HitCo
 			auto it =this->GetActorForwardVector();
 			it.Normalize();
 			FVector its = FVector(it.X,it.Y,it.Z);
-			Cast<ABaseCharacter>(Hit.Actor)->LaunchCharacter(its*(3000+AppleNumber*300),false,false);//移动 不能模拟物理
+			Cast<ABaseCharacter>(Hit.Actor)->LaunchCharacter(its*(TablePeachHitPlayerSpeed+AppleNumber*TablePeachHitPlayerSpeedAdd),false,false);//移动 不能模拟物理
 		
 			this->Destroy();
 			return;
@@ -156,7 +197,7 @@ void AProjectilePeach::ServerOnPropOverlap_Implementation(UPrimitiveComponent* O
 			auto it =this->GetActorForwardVector();
 			it.Normalize();
 			FVector its = FVector(it.X,it.Y,it.Z);
-			Cast<ABaseCharacter>(SweepResult.Actor)->LaunchCharacter(its*(3000+AppleNumber*300),false,false);//移动 不能模拟物理
+			Cast<ABaseCharacter>(SweepResult.Actor)->LaunchCharacter(its*(TablePeachHitPlayerSpeed+AppleNumber*TablePeachHitPlayerSpeedAdd),false,false);//移动 不能模拟物理
 			auto ItsOwner = Cast<ABaseCharacter>(this->GetOwner());
 			Cast<ABaseCharacter>(SweepResult.Actor)->Killerptr = Cast<APeachPlayerController>(ItsOwner->GetController());
 			this->Destroy();

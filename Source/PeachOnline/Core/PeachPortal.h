@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
+#include "Engine/DataTable.h"
 #include "GameFramework/Actor.h"
 #include "PeachPortal.generated.h"
 
@@ -59,4 +60,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps( TArray< FLifetimeProperty > & OutLifetimeProps ) const override;
+
+	float TableDetectEnermyRadius;
+	float TableDetectCallBackRadius;
+	UDataTable* Table;
 };

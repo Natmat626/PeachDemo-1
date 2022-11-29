@@ -167,7 +167,37 @@ void ABaseCharacter::BeginPlay()
 			if(pRow->PropertyName==TEXT("RunSpeed"))
 			{
 				TableRunspeed=pRow->Value;
-				break;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("WalkSpeed"))
+			{
+				TableWalkspeed=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TableRunEnergyCost"))
+			{
+				TableRunEnergyCost=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TableRunEnergyRecover"))
+			{
+				TableRunEnergyRecover=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TablePortalInvisibleTime"))
+			{
+				TablePortalInvisibleTime=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TablePeachCostEnergy"))
+			{
+				TablePeachCostEnergy=pRow->Value;
+				continue;
+			}
+			else if(pRow->PropertyName==TEXT("TablePutPortalLength"))
+			{
+				TablePutPortalLength=pRow->Value;
+				continue;
 			}
 		}
 	}
@@ -207,7 +237,7 @@ void ABaseCharacter::Tick(float DeltaTime)
 	{
 		PortalUICameraForwardVector = UKismetMathLibrary::GetForwardVector(PlayerCamera->GetComponentRotation());
 		
-		PortalUIEndLocation = PlayerCamera->GetComponentLocation() + PortalUICameraForwardVector * 1000;//可放置的长度
+		PortalUIEndLocation = PlayerCamera->GetComponentLocation() + PortalUICameraForwardVector * TablePutPortalLength;//可放置的长度
 		bool LineHitSuccess = UKismetSystemLibrary::LineTraceSingle(GetWorld(), PlayerCamera->GetComponentLocation(),PortalUIEndLocation,ETraceTypeQuery::TraceTypeQuery1,false,
 			PortalUIIgnoreArray,EDrawDebugTrace::None,PortalUIHitResult,true,FLinearColor::Red
 			,FLinearColor::Green,30.f);
@@ -287,16 +317,14 @@ void ABaseCharacter::FellOutOfWorld(const UDamageType& dmgType)
 		{
 			PortalPutUIActorPtr->Destroy();
 		}
-		ServerResetState();
+
 		if(UKismetSystemLibrary::IsServer(this))
 		{
-			UE_LOG(LogTemp,Warning,TEXT("ceshi"));
-			ServerAskForKillNotice();
+			FPSPlayerController->ServerShowKillerNotice(*FPSPlayerController->PlayerName,*FPSPlayerController->PlayerName);
 		}
+		
+		ServerResetState();
 		OnlinePeachPlayerController->DeathMatchDeth(this);
-	
-		
-		
 		
 	}
 }
@@ -316,7 +344,6 @@ void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME_CONDITION(ABaseCharacter,OrangeCount,COND_None);
 	DOREPLIFETIME_CONDITION(ABaseCharacter,DurianCount,COND_None);
 	DOREPLIFETIME_CONDITION(ABaseCharacter,Killerptr,COND_None);
-	DOREPLIFETIME_CONDITION(ABaseCharacter,FPSPlayerController,COND_None);
 	
 }
 
@@ -324,18 +351,18 @@ void ABaseCharacter::RefreshRunEnergy(float DeltaTime)
 {
 	if(PlayerWalkState == WalkState::Walk and RunEnergy<100.f)
 	{
-		RunEnergy = RunEnergy + 0.1;
+		RunEnergy = RunEnergy + TableRunEnergyRecover;
 		return;
 	}
 	if(PlayerWalkState== WalkState::Run and RunEnergy>0.f)
 	{
-		RunEnergy = RunEnergy - 0.1;
+		RunEnergy = RunEnergy - TableRunEnergyCost;
 		return;
 	}
 	if(RunEnergy<=0.f)
 	{
 		PlayerWalkState=WalkState::Walk;
-		CharacterMovement->MaxWalkSpeed=300;
+		CharacterMovement->MaxWalkSpeed=TableWalkspeed;
 		ServerNormalSpeedWalkAction();
 	}
 }
@@ -364,13 +391,13 @@ void ABaseCharacter::ServerPortalFunction_Implementation()
 {
 	if(PtrPortal!=nullptr)
 	{
-		if(RunEnergy>=20)
+		if(RunEnergy>=TablePeachCostEnergy)
 		{
 			FVector NewLocation  = PtrPortal->GetActorLocation() + PtrPortal->GetActorForwardVector()*40;
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = this;
 			SpawnParams.Instigator = this;
-			RunEnergy=RunEnergy-20;
+			RunEnergy=RunEnergy-TablePeachCostEnergy;
 			GetWorld()->SpawnActor<AProjectilePeach>(ProjectileClass,NewLocation,PtrPortal->GetActorRotation(),SpawnParams);
 		}
 	}
@@ -410,7 +437,7 @@ void ABaseCharacter::ServerAskForKillNotice_Implementation()
 {
 	
 	
-		if(Killerptr==nullptr)
+		/*if(Killerptr==nullptr)
 		{
 			ServerShowKillerNotice(*FPSPlayerController->PlayerName,*FPSPlayerController->PlayerName);
 			Killerptr=nullptr;
@@ -419,7 +446,7 @@ void ABaseCharacter::ServerAskForKillNotice_Implementation()
 		{
 			ServerShowKillerNotice(*Killerptr->PlayerName,*FPSPlayerController->PlayerName);
 			Killerptr=nullptr;
-		}
+		}*/
 	
 }
 
@@ -444,33 +471,13 @@ bool ABaseCharacter::ServerSetPortalVisable_Validate(APeachPortal* Portal)
 	return true;
 }
 
-void ABaseCharacter::ServerShowKillerNotice_Implementation( const FString&  Killer, const FString& Bekillered)
-{
-	
-		UE_LOG(LogTemp,Warning,TEXT("Fuc"));
-		
-		if(FPSPlayerController==nullptr)
-		{
-			return;
-		}
-		if(FPSPlayerController->PtrPlayerUI==nullptr)
-		{
-			return;
-		}
-		auto NewUnit =(CreateWidget<UKillerNotice>(FPSPlayerController->PtrPlayerUI,KillerNoticeClassUnit));
-		NewUnit->TexKiller->SetText(FText::FromString(*Killer));
-		NewUnit->TexBekilled->SetText(FText::FromString(*Bekillered));
-		FPSPlayerController->PtrPlayerUI->KillerNoticeList->AddChild(NewUnit);
-		
-	
-	
-}
 
-bool ABaseCharacter::ServerShowKillerNotice_Validate( const FString&  Killer,  const FString&  Bekillered)
-{
-	UE_LOG(LogTemp,Warning,TEXT("Validate"));
-	return true;
-}
+		
+	
+	
+
+
+
 
 
 void ABaseCharacter::PutPortalLineTeace(FVector CameraLocation, FRotator CameraRotation)
@@ -481,7 +488,7 @@ void ABaseCharacter::PutPortalLineTeace(FVector CameraLocation, FRotator CameraR
 	TArray<AActor*> IgnoreArray;
 	IgnoreArray.Add(this);
 
-	EndLocation = CameraLocation + CameraForwardVector * 1000;//可放置的长度
+	EndLocation = CameraLocation + CameraForwardVector * TablePutPortalLength;//可放置的长度
 	bool LineHitSuccess = UKismetSystemLibrary::LineTraceSingle(GetWorld(),CameraLocation,EndLocation,ETraceTypeQuery::TraceTypeQuery1,false,
 		IgnoreArray,EDrawDebugTrace::None,HitResult,true,FLinearColor::Red
 		,FLinearColor::Green,30.f);
@@ -508,7 +515,7 @@ void ABaseCharacter::PutPortalLineTeace(FVector CameraLocation, FRotator CameraR
 				PtrPortal->CanOtherNotSee=OrangeCount>0?true:false;
 				DurianCount=0;
 				OrangeCount=0;
-				GetWorld()->GetTimerManager().SetTimer(TimerHandle2, this, &ABaseCharacter::SetPortalVisableState, 10.0f, false);
+				GetWorld()->GetTimerManager().SetTimer(TimerHandle2, this, &ABaseCharacter::SetPortalVisableState, TablePortalInvisibleTime, false);
 			}
 			else if(OrangeCount==0)//没有橘子，传送门不隐身
 			{
@@ -543,7 +550,7 @@ bool ABaseCharacter::ServerHighSpeedRunAction_Validate()
 
 void ABaseCharacter::ServerNormalSpeedWalkAction_Implementation()
 {
-	CharacterMovement->MaxWalkSpeed=300;
+	CharacterMovement->MaxWalkSpeed=TableWalkspeed;
 	PlayerWalkState = WalkState::Walk;
 }
 
@@ -566,14 +573,14 @@ void ABaseCharacter::ServerFireFart_Implementation()
 			//不是放置传送门状态下放屁
 			//FActorSpawnParameters SpawnParameters;
 			//SpawnParameters.Owner = this;
-			if(RunEnergy>=20)
+			if(RunEnergy>=TablePeachCostEnergy)
 			{
 				FVector NewLocation  = PlayerCameraBack->GetComponentLocation() + PlayerCameraBack->GetForwardVector()*20;
 				//auto Trans = PlayerCameraBack->GetComponentRotation();
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.Owner = this;
 				SpawnParams.Instigator = this;
-				RunEnergy=RunEnergy-20;
+				RunEnergy=RunEnergy-TablePeachCostEnergy;
 				/*auto it = Cast<AProjectilePeach>(UGameplayStatics::BeginSpawningActorFromClass(this,ProjectileClass,FTransform(Trans,NewLocation,FVector(1,1,1)),false,this));
 				it->InitFartSpeed(1);
 				UGameplayStatics::FinishSpawningActor(PtrPortal, FTransform(Trans,NewLocation,FVector(1,1,1)));*/
@@ -717,7 +724,7 @@ void ABaseCharacter::HighSpeedRunAction()
 void ABaseCharacter::NormalSpeedWalkAction()
 {
 	PlayerWalkState = WalkState::Walk;
-	CharacterMovement->MaxWalkSpeed=300;
+	CharacterMovement->MaxWalkSpeed=TableWalkspeed;
 	ServerNormalSpeedWalkAction();
 }
 

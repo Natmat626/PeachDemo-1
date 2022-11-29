@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "KillerNotice.h"
 #include "PeachPlayerUI.h"
 #include "PeachPortal.h"
 #include "GameFramework/PlayerController.h"
@@ -17,6 +18,8 @@ class PEACHONLINE_API APeachPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 public:
+
+	APeachPlayerController();
 	UFUNCTION(BlueprintImplementableEvent,Category="Health")
 	void DeathMatchDeth(AActor* DamgeActor);
 	virtual void OnNetCleanup(class UNetConnection* Connection) override;
@@ -35,5 +38,11 @@ public:
 	FString PlayerName = TEXT("");
 	virtual void BeginPlay() override;
 
+	UFUNCTION(NetMulticast,Reliable,WithValidation)
+	void ServerShowKillerNotice(const FString&  Killer, const FString&  Bekillered);
+	void ServerShowKillerNotice_Implementation( const FString&   Killer, const FString&   Bekillered);
+	bool ServerShowKillerNotice_Validate(const FString&    Killer, const FString&    Bekillered);
+
+	TSubclassOf<UKillerNotice> KillerNoticeClassUnit;
 	virtual void GetLifetimeReplicatedProps( TArray< FLifetimeProperty > & OutLifetimeProps ) const override;
 };
