@@ -320,7 +320,7 @@ void ABaseCharacter::FellOutOfWorld(const UDamageType& dmgType)
 
 		if(UKismetSystemLibrary::IsServer(this))
 		{
-			FPSPlayerController->ServerShowKillerNotice(*FPSPlayerController->PlayerName,*FPSPlayerController->PlayerName);
+			ServerShowKillerNotice(*FPSPlayerController->PlayerName,*FPSPlayerController->PlayerName);
 		}
 		
 		ServerResetState();
@@ -451,6 +451,31 @@ void ABaseCharacter::ServerAskForKillNotice_Implementation()
 }
 
 bool ABaseCharacter::ServerAskForKillNotice_Validate()
+{
+	return true;
+}
+
+void ABaseCharacter::ServerShowKillerNotice_Implementation(const FString& Killer, const FString& Bekillered)
+{
+	auto it =GetWorld()->GetFirstPlayerController();
+	auto its = Cast<APeachPlayerController>(it);
+	auto UIptr = its->PtrPlayerUI;
+	
+	if(it == nullptr)
+	{
+		return;
+	}
+	if(UIptr==nullptr)
+	{
+		return;
+	}
+	auto NewUnit =(CreateWidget<UKillerNotice>(UIptr,KillerNoticeClassUnit));
+	NewUnit->TexKiller->SetText(FText::FromString(*Killer));
+	NewUnit->TexBekilled->SetText(FText::FromString(*Bekillered));
+	UIptr->KillerNoticeList->AddChild(NewUnit);
+}
+
+bool ABaseCharacter::ServerShowKillerNotice_Validate(const FString& Killer, const FString& Bekillered)
 {
 	return true;
 }

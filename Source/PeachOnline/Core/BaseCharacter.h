@@ -211,6 +211,11 @@ public:
 	bool ServerAskForKillNotice_Validate();
 
 	UFUNCTION(NetMulticast,Reliable,WithValidation)
+	void ServerShowKillerNotice(const FString&  Killer, const FString&  Bekillered);
+	void ServerShowKillerNotice_Implementation( const FString&   Killer, const FString&   Bekillered);
+	bool ServerShowKillerNotice_Validate(const FString&    Killer, const FString&    Bekillered);
+	
+	UFUNCTION(NetMulticast,Reliable,WithValidation)
 	void ServerSetPortalVisable(APeachPortal* Portal);
 	void ServerSetPortalVisable_Implementation(APeachPortal* Portal);
 	bool ServerSetPortalVisable_Validate(APeachPortal* Portal);
