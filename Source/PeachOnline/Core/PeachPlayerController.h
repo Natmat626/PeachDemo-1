@@ -27,19 +27,22 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	int PropSum=0;
 
-
+	UPROPERTY(BlueprintReadWrite,Replicated)
+	int Playerid=0;
 	UPROPERTY(BlueprintReadWrite,Replicated)
 	UPeachPlayerUI* PtrPlayerUI;
 	
 	UPROPERTY(BlueprintReadWrite)
 	APeachPortal* Ptrportal=nullptr;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite,Replicated)
 	FString PlayerName = TEXT("");
 	virtual void BeginPlay() override;
 
 	
-
+	UFUNCTION(BlueprintCallable)
+	int GetPlayerNetIndex();
+	
 	TSubclassOf<UKillerNotice> KillerNoticeClassUnit;
 	virtual void GetLifetimeReplicatedProps( TArray< FLifetimeProperty > & OutLifetimeProps ) const override;
 };

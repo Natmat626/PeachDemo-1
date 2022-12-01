@@ -36,13 +36,20 @@ void APeachPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	//PlayerName = Cast<UPeachGameInstance>(GetWorld()->GetGameInstance())->PlayerName;
-	PlayerName = TEXT("1111");
+	//PlayerName = TEXT("1111");
+}
+
+int APeachPlayerController::GetPlayerNetIndex()
+{
+	return Playerid;
 }
 
 void APeachPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(APeachPlayerController,PtrPlayerUI,COND_None);
+	DOREPLIFETIME_CONDITION(APeachPlayerController,PlayerName,COND_None);
+	DOREPLIFETIME_CONDITION(APeachPlayerController,Playerid,COND_None);
 }
 
 

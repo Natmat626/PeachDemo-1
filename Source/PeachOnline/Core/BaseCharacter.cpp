@@ -205,8 +205,6 @@ void ABaseCharacter::BeginPlay()
 	if(FPSPlayerController)
 	{
 		FPSPlayerController->SetPawn(this);
-		
-		
 	}
 	else
 	{
@@ -243,19 +241,37 @@ void ABaseCharacter::Tick(float DeltaTime)
 			,FLinearColor::Green,30.f);
 		if(LineHitSuccess)
 		{
-			if(PortalPutUIActorPtr==nullptr)
+			bool IsAllowToputPortal = true;
+			if(PortalUIHitResult.Actor->Tags.Num()!=0  and PortalUIHitResult.Actor->Tags[0].ToString() == TEXT("plane"))
 			{
-				FRotator XRotator = UKismetMathLibrary::MakeRotFromX(PortalUIHitResult.Normal);
-				PortalPutUIActorPtr = GetWorld()->SpawnActor<APortalPutUIActor>(PortalUICLass,PortalUIHitResult.Location+PortalUIHitResult.Normal*1,XRotator);
-				PortalUIIgnoreArray.Add(PortalPutUIActorPtr);
+				IsAllowToputPortal =false;
+			}
+			if(IsAllowToputPortal == true)
+			{
+				if(PortalPutUIActorPtr==nullptr)
+				{
+					FRotator XRotator = UKismetMathLibrary::MakeRotFromX(PortalUIHitResult.Normal);
+					PortalPutUIActorPtr = GetWorld()->SpawnActor<APortalPutUIActor>(PortalUICLass,PortalUIHitResult.Location+PortalUIHitResult.Normal*1,XRotator);
+					PortalUIIgnoreArray.Add(PortalPutUIActorPtr);
+				}
+				else
+				{
+					FRotator XRotator = UKismetMathLibrary::MakeRotFromX(PortalUIHitResult.Normal);
+					PortalPutUIActorPtr->GetRootComponent()->SetVisibility(true);
+					PortalPutUIActorPtr->SetActorLocation(PortalUIHitResult.Location+PortalUIHitResult.Normal*1);
+					PortalPutUIActorPtr->SetActorRotation(XRotator);
+				}
 			}
 			else
 			{
-				FRotator XRotator = UKismetMathLibrary::MakeRotFromX(PortalUIHitResult.Normal);
-				PortalPutUIActorPtr->GetRootComponent()->SetVisibility(true);
-				PortalPutUIActorPtr->SetActorLocation(PortalUIHitResult.Location+PortalUIHitResult.Normal*1);
-				PortalPutUIActorPtr->SetActorRotation(XRotator);
+				if(PortalPutUIActorPtr!=nullptr)
+				{
+					PortalPutUIActorPtr->GetRootComponent()->SetVisibility(false);
+					PortalPutUIActorPtr->WidgetComponent->SetVisibility(false);
+				}
+			
 			}
+			
 		}
 		else
 		{
@@ -320,7 +336,14 @@ void ABaseCharacter::FellOutOfWorld(const UDamageType& dmgType)
 
 		if(UKismetSystemLibrary::IsServer(this))
 		{
-			ServerShowKillerNotice(*FPSPlayerController->PlayerName,*FPSPlayerController->PlayerName);
+			if(Killerptr != nullptr)
+			{
+				ServerShowKillerNotice(*Killerptr->PlayerName,*FPSPlayerController->PlayerName);
+			}
+			else if(Killerptr==nullptr)
+			{
+				ServerShowKillerNotice(*FPSPlayerController->PlayerName,*FPSPlayerController->PlayerName);
+			}
 		}
 		
 		ServerResetState();
@@ -496,15 +519,6 @@ bool ABaseCharacter::ServerSetPortalVisable_Validate(APeachPortal* Portal)
 	return true;
 }
 
-
-		
-	
-	
-
-
-
-
-
 void ABaseCharacter::PutPortalLineTeace(FVector CameraLocation, FRotator CameraRotation)
 {
 	FVector EndLocation;
@@ -517,7 +531,10 @@ void ABaseCharacter::PutPortalLineTeace(FVector CameraLocation, FRotator CameraR
 	bool LineHitSuccess = UKismetSystemLibrary::LineTraceSingle(GetWorld(),CameraLocation,EndLocation,ETraceTypeQuery::TraceTypeQuery1,false,
 		IgnoreArray,EDrawDebugTrace::None,HitResult,true,FLinearColor::Red
 		,FLinearColor::Green,30.f);
-
+	if(HitResult.Actor->Tags.Num()!=0 and HitResult.Actor->Tags[0].ToString()==TEXT("plane"))
+	{
+		return;
+	}
 	if(LineHitSuccess)
 	{
 		if(PtrPortal==nullptr)

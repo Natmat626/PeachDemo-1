@@ -3,8 +3,13 @@
 
 #include "PeachOnlineGameModeBase.h"
 
+#include <iso646.h>
+
+#include "EngineUtils.h"
 #include "Core/BaseCharacter.h"
+#include "GameFramework/PlayerStart.h"
 #include "Kismet/BlueprintMapLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 PRAGMA_DISABLE_OPTIMIZATION
 
@@ -40,6 +45,23 @@ void APeachOnlineGameModeBase::PostLogin(APlayerController* NewPlayer)
 	
 }
 
+FString APeachOnlineGameModeBase::InitNewPlayer(APlayerController* NewPlayerController,
+	const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal)
+{
+	auto Superreturn =  Super::InitNewPlayer(NewPlayerController, UniqueId, Options, Portal);
+	auto Name = UGameplayStatics::ParseOption(Options,TEXT("PlayerName"));
+	auto Newcontroller = Cast<APeachPlayerController>(NewPlayerController);
+	if(Name.IsEmpty()==false and Newcontroller!=nullptr)
+	{
+		Newcontroller->PlayerName = Name;
+	}
+	
+
+
+	return Superreturn;
+	
+}
+
 void APeachOnlineGameModeBase::StartPlay()
 {
 	Super::StartPlay();
@@ -58,12 +80,61 @@ void APeachOnlineGameModeBase::StartPlay()
 			}
 		}
 	}
+	BeginTimerToSpawnProp();
 }
 
 
 void APeachOnlineGameModeBase::BeginTimerToSpawnProp()
 {
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &APeachOnlineGameModeBase::SpawnProp, TableSpawnFruitInterval,true);
+}
+
+void APeachOnlineGameModeBase::RestartPlayer(AController* NewPlayer)
+{
+	//Super::RestartPlayer(NewPlayer);
+	//选择固定出生点
+	if (NewPlayer == nullptr || NewPlayer->IsPendingKillPending())
+	{
+		return;
+	}
+
+	AActor* StartSpot = FindPlayerStart(NewPlayer);
+	UWorld* World = GetWorld();
+	auto tempplayercontroller = Cast<APeachPlayerController>(NewPlayer);
+	int i=0;
+	auto playernums = GetNumPlayers();
+	if(tempplayercontroller!=nullptr)
+	{
+		tempplayercontroller->Playerid = playernums-1;
+		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		{
+		
+			if(It->Tags[0].ToString()==FString::FromInt(tempplayercontroller->Playerid))
+			{
+				StartSpot = *It;
+				break;
+			}
+			else
+			{
+				i++;
+				continue;
+			}
+		}
+	}
+	
+	// If a start spot wasn't found,
+	if (StartSpot == nullptr)
+	{
+		// Check for a previously assigned spot
+		if (NewPlayer->StartSpot != nullptr)
+		{
+			StartSpot = NewPlayer->StartSpot.Get();
+			UE_LOG(LogGameMode, Warning, TEXT("RestartPlayer: Player start not found, using last start spot"));
+		}	
+	}
+
+	RestartPlayerAtPlayerStart(NewPlayer, StartSpot);
+	
 }
 
 void APeachOnlineGameModeBase::SpawnProp()

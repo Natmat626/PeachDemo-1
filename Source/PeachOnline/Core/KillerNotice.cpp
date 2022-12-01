@@ -39,6 +39,10 @@ void UKillerNotice::Destorythiswidget()
 {
 	if(this!=nullptr)
 	{
-		Cast<APeachPlayerController>(GetWorld()->GetFirstPlayerController())->PtrPlayerUI->KillerNoticeList->ClearChildren();
+		if(Cast<APeachPlayerController>(GetWorld()->GetFirstPlayerController())->PtrPlayerUI->KillerNoticeList->GetChildrenCount()>0)
+		{
+			Cast<APeachPlayerController>(GetWorld()->GetFirstPlayerController())->PtrPlayerUI->KillerNoticeList->RemoveChildAt(0);
+		}
+		
 	}
 }

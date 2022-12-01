@@ -41,6 +41,8 @@ public:
 	void BeginTimerToSpawnProp();
 
 	
+	virtual void RestartPlayer(AController* NewPlayer)override;
+	
 	
 	UFUNCTION()
 	void SpawnProp();
@@ -53,7 +55,7 @@ public:
 
 	virtual APlayerController* Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal, const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void PostLogin(APlayerController* NewPlayer)override;
-
+	virtual FString InitNewPlayer(APlayerController* NewPlayerController, const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal = TEXT("")) override;
 	TSubclassOf<APeachProp> BananaClass;
 	TSubclassOf<APeachProp> AppleClass;
 	TSubclassOf<APeachProp> WatermelonClass;
