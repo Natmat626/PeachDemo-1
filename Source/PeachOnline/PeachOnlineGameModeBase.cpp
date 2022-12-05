@@ -108,7 +108,10 @@ void APeachOnlineGameModeBase::RestartPlayer(AController* NewPlayer)
 		tempplayercontroller->Playerid = playernums-1;
 		for (TActorIterator<APlayerStart> It(World); It; ++It)
 		{
-		
+			if(It->Tags.Num()==0)
+			{
+				continue;
+			}
 			if(It->Tags[0].ToString()==FString::FromInt(tempplayercontroller->Playerid))
 			{
 				StartSpot = *It;
