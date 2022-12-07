@@ -482,6 +482,10 @@ void ABaseCharacter::ServerShowKillerNotice_Implementation(const FString& Killer
 {
 	auto it =GetWorld()->GetFirstPlayerController();
 	auto its = Cast<APeachPlayerController>(it);
+	if(its==nullptr)
+	{
+		return;
+	}
 	auto UIptr = its->PtrPlayerUI;
 	
 	if(it == nullptr)
